@@ -15,7 +15,19 @@ function geminiKey(): string | null {
 }
 
 export function geminiModel(): string {
-  return process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  return process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+}
+
+/** Urutan model dicoba: pilihan user dulu, lalu kandidat gratis lain.
+ * ID model Gemini sering dipensiunkan, jadi 404 → lanjut ke berikutnya. */
+function modelChain(): string[] {
+  const first = geminiModel();
+  const fallbacks = [
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash-lite",
+  ];
+  return [first, ...fallbacks.filter((m) => m !== first)];
 }
 
 const PROMPT = `Baca foto struk belanja Indonesia ini. Balas HANYA JSON valid tanpa penjelasan, format persis:
@@ -55,29 +67,34 @@ export async function parseReceipt(
   const key = geminiKey();
   if (!key) throw new Error("gemini_not_configured");
   const base64 = Buffer.from(image).toString("base64");
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel()}:generateContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: PROMPT },
-              { inline_data: { mime_type: mime, data: base64 } },
-            ],
-          },
-        ],
-        generationConfig: { temperature: 0, maxOutputTokens: 256 },
-      }),
-    },
-  );
-  if (!r.ok) throw new Error(`gemini_http_${r.status}`);
-  const j = (await r.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-  if (!text) throw new Error("gemini_empty");
-  return extractJson(text);
+  for (const model of modelChain()) {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: PROMPT },
+                { inline_data: { mime_type: mime, data: base64 } },
+              ],
+            },
+          ],
+          generationConfig: { temperature: 0, maxOutputTokens: 256 },
+        }),
+      },
+    );
+    // Model tidak dikenal/pensiun → coba kandidat berikutnya.
+    if (r.status === 404) continue;
+    if (!r.ok) throw new Error(`gemini_http_${r.status}`);
+    const j = (await r.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    if (!text) throw new Error("gemini_empty");
+    return extractJson(text);
+  }
+  throw new Error("gemini_http_404");
 }

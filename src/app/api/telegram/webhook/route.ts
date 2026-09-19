@@ -144,7 +144,7 @@ async function handlePhoto(chatId: number, fileId: string) {
     } else if (code === "gemini_http_404") {
       await sendMessage(
         chatId,
-        "🔍 Model AI tidak dikenal Google. Periksa GEMINI_MODEL di env server.",
+        "🔍 Semua model AI yang dicoba tidak dikenal Google (ID model berubah). Cek AI Studio untuk ID model gratis yang aktif, isi ke GEMINI_MODEL di env, redeploy.",
       );
     } else if (code === "gemini_http_429") {
       await sendMessage(
