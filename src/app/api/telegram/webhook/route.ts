@@ -128,11 +128,40 @@ async function handlePhoto(chatId: number, fileId: string) {
         ],
       ],
     );
-  } catch {
-    await sendMessage(
-      chatId,
-      "😕 Gagal membaca struk (foto kurang jelas atau AI sedang sibuk). Coba foto ulang lebih terang, atau catat manual di web.",
-    );
+  } catch (e) {
+    const code = e instanceof Error ? e.message : "unknown";
+    console.error("[struk]", code);
+    if (code === "gemini_not_configured" || code === "bot_not_configured") {
+      await sendMessage(
+        chatId,
+        "⚙️ Bot belum dikonfigurasi (kunci AI tidak ada di server). Pastikan GEMINI_API_KEY terisi di env lalu redeploy.",
+      );
+    } else if (code === "gemini_http_400" || code === "gemini_http_403") {
+      await sendMessage(
+        chatId,
+        "🔑 Kunci API Gemini ditolak Google. Periksa GEMINI_API_KEY di env server (tanpa tanda kutip/spasi) lalu redeploy.",
+      );
+    } else if (code === "gemini_http_404") {
+      await sendMessage(
+        chatId,
+        "🔍 Model AI tidak dikenal Google. Periksa GEMINI_MODEL di env server.",
+      );
+    } else if (code === "gemini_http_429") {
+      await sendMessage(
+        chatId,
+        "⏳ Kuota AI gratis habis. Tunggu beberapa menit lalu kirim ulang fotonya.",
+      );
+    } else if (code.startsWith("telegram_")) {
+      await sendMessage(
+        chatId,
+        "📡 Gagal mengunduh foto dari Telegram. Coba kirim ulang fotonya.",
+      );
+    } else {
+      await sendMessage(
+        chatId,
+        "😕 Gagal membaca struk (hasil AI tidak valid). Coba foto ulang lebih terang dan lengkap (sampai total terbaca), atau catat manual di web.",
+      );
+    }
   }
 }
 
