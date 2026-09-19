@@ -50,20 +50,13 @@ export function useLedger(userId: string) {
 
   /* eslint-disable react-hooks/set-state-in-effect -- hidrasi awal dari external systems (localStorage + Neon), saat mount / ganti user */
   useEffect(() => {
-    // Cache milik user ini. User baru (tanpa cache) mulai KOSONG,
-    // kecuali ini pemakaian pertama di browser (dapat data contoh).
+    // Cache milik user ini. User baru SELALU mulai kosong — tidak ada
+    // data contoh otomatis (dulu seed contoh ikut ter-adopsi ke user baru).
     let localAcc = loadLocal<Account[] | null>(accKey, null);
     let localTx = loadLocal<Transaction[] | null>(txKey, null);
     if (localAcc === null || localTx === null) {
-      if (!loadLocal<boolean>(storeKeys.seeded, false)) {
-        const s = seedData();
-        localAcc = s.accounts;
-        localTx = s.txs;
-        saveLocal(storeKeys.seeded, true);
-      } else {
-        localAcc = localAcc ?? [];
-        localTx = localTx ?? [];
-      }
+      localAcc = localAcc ?? [];
+      localTx = localTx ?? [];
       saveLocal(accKey, localAcc);
       saveLocal(txKey, localTx);
     }
