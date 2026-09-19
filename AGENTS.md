@@ -1,0 +1,26 @@
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+# Repo facts (verified 2026-09-19)
+
+- Stack: Next.js 16.3.5 + React 19 + TypeScript 5 + Tailwind CSS 4 + ESLint 9, App Router with `src/` dir (`src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`).
+- Package manager: npm (`package-lock.json` present). No backend/DB wired yet. No git repo.
+- Scripts: `npm run dev` (next dev), `npm run build` (next build, Turbopack, verified OK), `npm start` (next start), `npm run lint` (eslint, verified OK).
+- Config: `next.config.ts`, `tsconfig.json` (path alias `@/*` -> `src/*`), `postcss.config.mjs` (@tailwindcss/postcss), `eslint.config.mjs` (eslint-config-next).
+- Planned: Neon Postgres (SQL gratis) + deploy Vercel Hobby. Next step: install `@neondatabase/serverless` + Drizzle/Prisma, tambah tabel accounts/transactions/rates.
+- DB layer (Neon-ready, tanpa DB tetap jalan): `src/db/schema.ts` (accounts, categories, transactions, rates), `src/db/client.ts` (null-safe jika `DATABASE_URL` kosong), `drizzle.config.ts` (out `./drizzle`), migrasi awal `drizzle/0000_gorgeous_warstar.sql` (verified via `drizzle-kit generate`).
+- App (localStorage-first, verified dev/build/lint + smoke test `next start`): `src/lib/finance.ts` (tipe, konversi IDR, agregasi hari/minggu/bulan/tahun, seed), `src/lib/useLedger.ts` (state + persist), UI M3 di `src/components/` + `src/app/page.tsx` (dashboard, akun, statistik recharts, FAB catat).
+- API: `GET /api/health` (ping Neon, `db:true` hanya jika reachable), `GET /api/rates` (USDTIDR via Binance→CoinGecko, emas via gold-api.com, cache 5-10 mnt, fallback konstanta; verified live 2026-09-19).
+- API Neon-backed (verified CRUD live 2026-09-19, saldo konsisten): `GET|POST /api/accounts`, `PATCH|DELETE /api/accounts/[id]`, `GET|POST /api/transactions` (update saldo via SQL delta + snapshot amountIdr), `DELETE /api/transactions/[id]` (revert saldo), `POST /api/ledger/replace` (tulis ulang buku kas: adopsi lokal→Neon, contoh, hapus semua; amountIdr opsional). `src/lib/ledger-api.ts` = helper fetch client. `useLedger` Neon-first: hidrasi lokal instan → load server → auto-replace jika server kosong & lokal berisi (dengan `normalizeIds` karena kolom Neon bertipe uuid + retry 3x untuk transient service_overload); tiap mutasi mirror background via thunk + 1 retry, gagal → mode lokal. ID pakai `crypto.randomUUID` (sama dengan PK Neon).
+- Status 2026-09-19 malam: badge "Neon DB" live, server kosong karena user menghapus data contoh via UI (add/delete verified jalan dua arah). Klik "Muat contoh" di footer untuk isi ulang contoh ke Neon.
+- Auth multi-user (Better Auth email+password, verified 2026-09-19): tabel `"user"`, `session`, `account`, `verification` + `accounts.user_id` (nullable untuk klaim baris yatim); migrasi `drizzle/0001_talented_justin_hammer.sql`. `src/lib/auth.ts` (server), `src/lib/auth-client.ts` (`useSession` tanpa provider), `src/app/api/auth/[...all]/route.ts`, `src/lib/require-user.ts` (`authUser()` + klaim yatim). SEMUA API ledger 401 jika belum login + scope `userId` (tx via join). Isolasi A/B verified via curl ( &
+signup, 401 anon, password salah). UI: `AuthScreen` (Masuk/Daftar M3) + gate di `page.tsx` + tombol Keluar. Env: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (wajib di Vercel dengan URL production). Akun BCA asli user = yatim (user_id null), otomatis diklaim saat user login pertama.
+- Fix bocor antar-user (2026-09-19): cache localStorage di-namespace per userId (`etw-accounts-v1:<uid>`); user baru mulai kosong (seed contoh hanya untuk pemakaian pertama); saat online cache lama pra-login dibuang, saat offline dipakai apa adanya. `useLedger(userId)` dari `session.user.id`. Verified: user C baru → `[]`, tidak mewarisi data A/B.
+- Deps runtime: `@neondatabase/serverless`, `drizzle-orm`, `recharts`; dev: `drizzle-kit`. Env: `.env.example` (`DATABASE_URL` untuk Neon).

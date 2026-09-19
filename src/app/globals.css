@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Material 3 (M3) light scheme — putih + biru muda.
+   Pakai color roles M3 sebagai token Tailwind:
+   bg-primary, text-on-primary, bg-primary-container, dsb. */
+@theme {
+  --color-primary: #1976d2;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #d6e9ff;
+  --color-on-primary-container: #0b2f5c;
+  --color-secondary-container: #e3f0ff;
+  --color-on-secondary-container: #1a3a5c;
+  --color-surface: #ffffff;
+  --color-surface-container-low: #f4f8ff;
+  --color-surface-container: #e9f1fc;
+  --color-surface-container-high: #e0ebfa;
+  --color-on-surface: #191c20;
+  --color-on-surface-variant: #44484f;
+  --color-outline: #8b9099;
+  --color-outline-variant: #d3e2f3;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-success: #1b7a3d;
+  --color-success-container: #d3f2dd;
+}
+
+html {
+  background: var(--color-surface-container-low);
+}
+
+body {
+  background: var(--color-surface-container-low);
+  color: var(--color-on-surface);
+}
+
+/* Hilangkan spinner number input agar tampilan bersih */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
