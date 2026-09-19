@@ -5,6 +5,7 @@ import { AccountsSection } from "@/components/AccountsSection";
 import { AuthScreen } from "@/components/AuthScreen";
 import { RatesBar } from "@/components/RatesBar";
 import { StatsSection } from "@/components/StatsSection";
+import { TelegramSection } from "@/components/TelegramSection";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { signOut, useSession } from "@/lib/auth-client";
 import { formatIDR, totalBalanceIdr } from "@/lib/finance";
@@ -106,6 +107,7 @@ function LedgerApp({
         <RatesBar ledger={ledger} />
         <AccountsSection ledger={ledger} />
         <StatsSection ledger={ledger} />
+        <TelegramSection />
       </div>
 
       {/* FAB M3 */}

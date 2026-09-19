@@ -15,6 +15,13 @@
       "when": 1789817928812,
       "tag": "0001_talented_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789824252037,
+      "tag": "0002_slimy_polaris",
+      "breakpoints": true
     }
   ]
 }

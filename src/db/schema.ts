@@ -82,6 +82,8 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  /** Chat Telegram yang ditautkan via kode pairing (/link). */
+  telegramChatId: text("telegram_chat_id").unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -124,4 +126,42 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ---------- Bot Telegram (Fase 1: struk-OCR) ----------
+
+/** Kode pairing 6-digit sekali pakai (kedaluwarsa 10 menit). */
+export const pairingCodes = pgTable("pairing_codes", {
+  code: text("code").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Status percakapan struk per chat (serverless tidak boleh simpan di memori;
+ * callback_data Telegram maks 64 byte sehingga state wajib di DB).
+ * Satu chat = satu struk aktif (foto baru menimpa).
+ */
+export const botPending = pgTable("bot_pending", {
+  chatId: text("chat_id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  step: text("step").notNull().default("kind"),
+  merchant: text("merchant"),
+  amountIdr: numeric("amount_idr", { precision: 20, scale: 2 })
+    .notNull()
+    .default("0"),
+  date: date("date"),
+  kind: text("kind"),
+  accountId: uuid("account_id"),
+  category: text("category"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
