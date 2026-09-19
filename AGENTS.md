@@ -11,7 +11,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # Repo facts (verified 2026-09-19)
 
 - Stack: Next.js 16.3.5 + React 19 + TypeScript 5 + Tailwind CSS 4 + ESLint 9, App Router with `src/` dir (`src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`).
-- Package manager: npm (`package-lock.json` present). No backend/DB wired yet. No git repo.
+- Package manager: npm (`package-lock.json` present). Git repo initialized 2026-09-19 (commit awal `50463b2`); `.env*` ignored (`.env.example` force-added sebagai template).
+- Build aman tanpa env: `src/lib/auth.ts` lazy (`getAuth()`), verified `npm run build` lolos tanpa `.env.local`.
 - Scripts: `npm run dev` (next dev), `npm run build` (next build, Turbopack, verified OK), `npm start` (next start), `npm run lint` (eslint, verified OK).
 - Config: `next.config.ts`, `tsconfig.json` (path alias `@/*` -> `src/*`), `postcss.config.mjs` (@tailwindcss/postcss), `eslint.config.mjs` (eslint-config-next).
 - Planned: Neon Postgres (SQL gratis) + deploy Vercel Hobby. Next step: install `@neondatabase/serverless` + Drizzle/Prisma, tambah tabel accounts/transactions/rates.
