@@ -63,16 +63,20 @@ function LedgerApp({
           </p>
         </div>
         <span className="ms-auto flex items-center gap-2">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              ledger.dbMode
-                ? "bg-success-container text-success"
-                : "bg-surface-container text-on-surface-variant"
-            }`}
-            title="Mode penyimpanan data"
-          >
-            {ledger.dbMode ? "● Neon DB" : "● Lokal"}
-          </span>
+          {/* Badge provider DB hanya di development — disembunyikan di
+              production agar tidak membocorkan info infra ke publik. */}
+          {process.env.NODE_ENV === "development" ? (
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                ledger.dbMode
+                  ? "bg-success-container text-success"
+                  : "bg-surface-container text-on-surface-variant"
+              }`}
+              title="Mode penyimpanan data"
+            >
+              {ledger.dbMode ? "● Neon DB" : "● Lokal"}
+            </span>
+          ) : null}
           <button
             onClick={() => {
               void signOut().finally(() => window.location.reload());
@@ -108,7 +112,7 @@ function LedgerApp({
       <footer className="mt-8 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
         <span>
           Data tersimpan otomatis di akun ini
-          {ledger.dbMode ? " (Neon DB)." : " (browser, DB tidak reachable)."}
+          {ledger.dbMode ? " dan tersinkron cloud." : "."}
         </span>
         <span className="ms-auto flex gap-2">
           <button

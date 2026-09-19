@@ -70,24 +70,29 @@ export function AuthScreen() {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl bg-surface-container p-1">
-          {(["in", "up"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => {
-                setMode(m);
-                setError(null);
-              }}
-              className={`rounded-xl py-2 text-sm font-semibold transition ${
-                mode === m
-                  ? "bg-secondary-container text-on-secondary-container"
-                  : "text-on-surface-variant"
-              }`}
-            >
-              {m === "in" ? "Masuk" : "Daftar"}
-            </button>
-          ))}
+        <div className="mt-6 grid grid-cols-2 gap-1 rounded-2xl border border-outline-variant bg-surface-container-low p-1">
+          {(["in", "up"] as const).map((m) => {
+            const active = mode === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setMode(m);
+                  setError(null);
+                }}
+                aria-pressed={active}
+                className={`rounded-xl py-2 text-sm transition ${
+                  active
+                    ? "bg-primary font-bold text-on-primary shadow"
+                    : "bg-transparent font-medium text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                {active ? "✓ " : ""}
+                {m === "in" ? "Masuk" : "Daftar"}
+              </button>
+            );
+          })}
         </div>
 
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
