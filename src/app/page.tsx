@@ -108,33 +108,6 @@ function LedgerApp({
         <StatsSection ledger={ledger} />
       </div>
 
-      {/* Data */}
-      <footer className="mt-8 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
-        <span>
-          Data tersimpan otomatis di akun ini
-          {ledger.dbMode ? " dan tersinkron cloud." : "."}
-        </span>
-        <span className="ms-auto flex gap-2">
-          <button
-            onClick={() => {
-              if (window.confirm("Muat ulang data contoh?")) ledger.reseed();
-            }}
-            className="rounded-full border border-outline-variant bg-surface px-3 py-1.5 font-semibold text-primary"
-          >
-            Muat contoh
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm("Hapus SEMUA akun & transaksi?"))
-                ledger.clearAll();
-            }}
-            className="rounded-full border border-outline-variant bg-surface px-3 py-1.5 font-semibold text-error"
-          >
-            Hapus semua
-          </button>
-        </span>
-      </footer>
-
       {/* FAB M3 */}
       <button
         onClick={() => setShowTx(true)}
