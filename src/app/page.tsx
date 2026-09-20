@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AccountsSection } from "@/components/AccountsSection";
 import { AuthScreen } from "@/components/AuthScreen";
 import { RatesBar } from "@/components/RatesBar";
+import { RecurringSection } from "@/components/RecurringSection";
 import { StatsSection } from "@/components/StatsSection";
 import { TelegramSection } from "@/components/TelegramSection";
 import { TransactionDialog } from "@/components/TransactionDialog";
@@ -106,6 +107,7 @@ function LedgerApp({
       <div className="mt-4 flex flex-col gap-6">
         <RatesBar ledger={ledger} />
         <AccountsSection ledger={ledger} />
+        <RecurringSection ledger={ledger} />
         <StatsSection ledger={ledger} />
         <TelegramSection />
       </div>

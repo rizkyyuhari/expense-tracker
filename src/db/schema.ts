@@ -1,11 +1,13 @@
 import {
   boolean,
   date,
+  integer,
   numeric,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -165,3 +167,44 @@ export const botPending = pgTable("bot_pending", {
     .notNull()
     .defaultNow(),
 });
+
+// ---------- Pemasukan/pengeluaran rutin bulanan (cth: gaji tgl 25) ----------
+
+export const recurringRules = pgTable("recurring_rules", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accountId: uuid("account_id")
+    .notNull()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  kind: txKind("kind").notNull().default("income"),
+  amountNative: numeric("amount_native", { precision: 20, scale: 8 }).notNull(),
+  category: text("category").notNull().default("Gaji"),
+  note: text("note"),
+  /** Tanggal jadwal tiap bulan (1–31; dijepit ke akhir bulan bila pendek). */
+  dayOfMonth: integer("day_of_month").notNull(),
+  /** Periode yyyy-mm mulai berlaku (anti-backfill sebelum aturan dibuat). */
+  startMonth: text("start_month").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Jejak periode yang sudah diposting (idempoten: 1 baris per rule+bulan). */
+export const recurringRuns = pgTable(
+  "recurring_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ruleId: uuid("rule_id")
+      .notNull()
+      .references(() => recurringRules.id, { onDelete: "cascade" }),
+    period: text("period").notNull(),
+    effectiveDate: date("effective_date").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique("recurring_runs_rule_period_uniq").on(t.ruleId, t.period)],
+);

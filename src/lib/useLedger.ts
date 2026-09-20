@@ -130,6 +130,23 @@ export function useLedger(userId: string) {
           saveLocal(txKey, server.transactions);
         }
         setDbMode(true);
+        // Sapu aturan rutin yang jatuh tempo (idempoten); bila ada yang
+        // diposting, muat ulang agar saldo & daftar langsung mutakhir.
+        try {
+          const rr = await fetch("/api/recurring/run", { method: "POST" });
+          if (rr.ok) {
+            const jr = (await rr.json()) as { created?: number };
+            if (jr.created && jr.created > 0) {
+              const s2 = await ledgerApi.load();
+              setAccounts(s2.accounts);
+              setTxs(s2.transactions);
+              saveLocal(accKey, s2.accounts);
+              saveLocal(txKey, s2.transactions);
+            }
+          }
+        } catch {
+          // abaikan — cron server yang akan mengejar
+        }
       } catch {
         // tetap mode lokal
       } finally {
@@ -314,6 +331,28 @@ export function useLedger(userId: string) {
 
   const today = toKey(new Date());
 
+  /** Muat ulang data server (tidak menimpa cache lokal yang belum sinkron). */
+  const reload = useCallback(async () => {
+    try {
+      const server = await ledgerApi.load();
+      const localHas =
+        loadLocal<Account[] | null>(accKey, null) !== null &&
+        (accounts.length > 0 || txs.length > 0);
+      if (
+        server.accounts.length > 0 ||
+        server.transactions.length > 0 ||
+        !localHas
+      ) {
+        setAccounts(server.accounts);
+        setTxs(server.transactions);
+        saveLocal(accKey, server.accounts);
+        saveLocal(txKey, server.transactions);
+      }
+    } catch {
+      // abaikan
+    }
+  }, [accKey, txKey, accounts.length, txs.length]);
+
   return {
     ready,
     accounts,
@@ -333,6 +372,7 @@ export function useLedger(userId: string) {
     setManualGoldPrice,
     reseed,
     clearAll,
+    reload,
   };
 }
 

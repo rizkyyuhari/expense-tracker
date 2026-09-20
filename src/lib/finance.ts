@@ -113,6 +113,87 @@ export function roundNative(n: number, type: AccountType): number {
   return Number(n.toFixed(8));
 }
 
+const WD_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+export const WEEKDAY_SHORT = WD_SHORT;
+
+/**
+ * Tanggal efektif jadwal bulanan: jepit ke akhir bulan bila hari tidak ada
+ * (tgl 31 di Februari → tgl 28/29), lalu MAJU ke Jumat bila jatuh Sabtu/Minggu.
+ */
+export function effectiveMonthlyDate(
+  year: number,
+  monthIdx: number,
+  day: number,
+): Date {
+  const dim = new Date(year, monthIdx + 1, 0).getDate();
+  const d = new Date(year, monthIdx, Math.min(Math.max(day, 1), dim));
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+  return d;
+}
+
+export interface RecurringPreview {
+  year: number;
+  monthIdx: number;
+  monthLabel: string;
+  scheduledDay: number;
+  effective: Date;
+  effectiveKey: string;
+  shifted: boolean;
+  weekday: string;
+}
+
+/** N tanggal efektif ke depan mulai bulan ini (lewati yang sudah lewat). */
+export function previewRecurring(
+  day: number,
+  count: number,
+  from: Date = new Date(),
+): RecurringPreview[] {
+  const out: RecurringPreview[] = [];
+  const today = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const monthNames = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  ];
+  let y = from.getFullYear();
+  let m = from.getMonth();
+  let guard = 0;
+  while (out.length < count && guard < 24) {
+    const eff = effectiveMonthlyDate(y, m, day);
+    const effDay = new Date(eff.getFullYear(), eff.getMonth(), eff.getDate());
+    if (effDay >= today) {
+      const scheduled = new Date(y, m, Math.min(day, new Date(y, m + 1, 0).getDate()));
+      out.push({
+        year: y,
+        monthIdx: m,
+        monthLabel: monthNames[m] ?? "",
+        scheduledDay: scheduled.getDate(),
+        effective: eff,
+        effectiveKey: toKey(eff),
+        shifted: eff.getTime() !== scheduled.getTime(),
+        weekday: WD_SHORT[eff.getDay()] ?? "",
+      });
+    }
+    m++;
+    if (m > 11) {
+      m = 0;
+      y++;
+    }
+    guard++;
+  }
+  return out;
+}
+
+/** Tanggal hari ini zona Asia/Jakarta (yyyy-mm-dd) — untuk batas periode server. */
+export function wibTodayKey(d: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+  return parts; // format en-CA = yyyy-mm-dd
+}
+
 export function toIdr(
   amountNative: number,
   type: AccountType,
