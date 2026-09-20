@@ -59,7 +59,6 @@ export const CATEGORIES: { name: string; icon: string; color: string }[] = [
   { name: "Kesehatan", icon: "💊", color: "#10b981" },
   { name: "Gaji", icon: "💼", color: "#1976d2" },
   { name: "Investasi", icon: "📈", color: "#059669" },
-  { name: "Penyesuaian", icon: "⚖️", color: "#0284c7" },
   { name: "Lainnya", icon: "💸", color: "#64748b" },
 ];
 
@@ -76,12 +75,18 @@ export function formatIDR(n: number): string {
   return "Rp" + Math.round(n).toLocaleString("id-ID");
 }
 
-export function formatNative(n: number, type: AccountType): string {
-  if (type === "IDR" || type === "CASH")
+export function formatNative(n: number, type: AccountType): string {  if (type === "IDR" || type === "CASH")
     return "Rp" + Math.round(n).toLocaleString("id-ID");
   if (type === "USDT")
     return `${n.toLocaleString("en-US", { maximumFractionDigits: 4 })} USDT`;
   return `${n.toLocaleString("en-US", { maximumFractionDigits: 4 })} gram`;
+}
+
+/** Bulatkan nominal ke presisi wajar per tipe aset. */
+export function roundNative(n: number, type: AccountType): number {
+  if (!Number.isFinite(n)) return n;
+  if (type === "IDR" || type === "CASH") return Math.round(n);
+  return Number(n.toFixed(8));
 }
 
 export function toIdr(

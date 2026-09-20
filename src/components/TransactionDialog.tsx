@@ -5,6 +5,8 @@ import {
   ACCOUNT_META,
   CATEGORIES,
   TxKind,
+  formatNative,
+  roundNative,
   toKey,
 } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
@@ -19,6 +21,7 @@ export function TransactionDialog({
 }) {
   const { accounts, addTransaction } = ledger;
   const [kind, setKind] = useState<TxKind>("expense");
+  const [mode, setMode] = useState<"amount" | "balance">("amount");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Makan");
@@ -26,8 +29,21 @@ export function TransactionDialog({
   const [note, setNote] = useState("");
 
   const account = accounts.find((a) => a.id === accountId);
+  // Mode saldo: selisih = aktual − tercatat; arah ikut tanda selisih.
+  const diff =
+    account && mode === "balance" && amount.trim() !== ""
+      ? roundNative(Number(amount) - account.balance, account.type)
+      : null;
+  const hasDiff =
+    diff !== null && Number.isFinite(diff) && diff !== 0;
+  const effKind: TxKind =
+    mode === "balance" ? (diff !== null && diff < 0 ? "expense" : "income") : kind;
   const valid =
-    account && Number(amount) > 0 && category.trim().length > 0 && date;
+    account && category.trim().length > 0 && date
+      ? mode === "amount"
+        ? Number(amount) > 0
+        : hasDiff
+      : false;
 
   return (
     <Modal title="Catat transaksi" onClose={onClose}>
@@ -42,8 +58,11 @@ export function TransactionDialog({
             if (!valid || !account) return;
             addTransaction({
               accountId: account.id,
-              kind,
-              amount: Number(amount),
+              kind: effKind,
+              amount:
+                mode === "balance" && hasDiff
+                  ? Math.abs(diff ?? 0)
+                  : Number(amount),
               category: category.trim(),
               date,
               note: note.trim() || undefined,
@@ -53,7 +72,25 @@ export function TransactionDialog({
           className="flex flex-col gap-3"
         >
           <div className="grid grid-cols-2 gap-2 rounded-2xl bg-surface-container p-1">
-            {(["expense", "income"] as TxKind[]).map((k) => (
+            {(["amount", "balance"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`rounded-xl py-2 text-sm font-semibold transition ${
+                  mode === m
+                    ? "bg-secondary-container text-on-secondary-container"
+                    : "text-on-surface-variant"
+                }`}
+              >
+                {mode === m ? "✓ " : ""}
+                {m === "amount" ? "💸 Nominal" : "⚖️ Saldo aktual"}
+              </button>
+            ))}
+          </div>
+          {mode === "amount" ? (
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-surface-container p-1">
+              {(["expense", "income"] as TxKind[]).map((k) => (
               <button
                 key={k}
                 type="button"
@@ -70,6 +107,38 @@ export function TransactionDialog({
               </button>
             ))}
           </div>
+          ) : (
+            <div className="rounded-2xl bg-surface-container-low px-3.5 py-2.5 text-sm">
+              <p className="text-xs text-on-surface-variant">
+                Tercatat:{" "}
+                <b>
+                  {account
+                    ? formatNative(account.balance, account.type)
+                    : "—"}
+                </b>
+              </p>
+              {hasDiff ? (
+                <p
+                  className={`mt-1 font-bold ${
+                    (diff ?? 0) < 0 ? "text-error" : "text-success"
+                  }`}
+                >
+                  {(diff ?? 0) < 0 ? "−" : "+"}
+                  {account
+                    ? formatNative(Math.abs(diff ?? 0), account.type)
+                    : ""}{" "}
+                  sebagai{" "}
+                  {effKind === "expense" ? "Pengeluaran" : "Pemasukan"}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-on-surface-variant">
+                  {amount.trim() === ""
+                    ? "Ketik saldo aktual di bawah — selisihnya jadi transaksi."
+                    : "Sama dengan tercatat (tidak ada selisih)."}
+                </p>
+              )}
+            </div>
+          )}
           <div>
             <label className={labelCls}>Akun</label>
             <select
@@ -86,7 +155,9 @@ export function TransactionDialog({
           </div>
           <div>
             <label className={labelCls}>
-              Nominal ({account ? ACCOUNT_META[account.type].unit : ""})
+              {mode === "amount"
+                ? `Nominal (${account ? ACCOUNT_META[account.type].unit : ""})`
+                : `Saldo aktual (${account ? ACCOUNT_META[account.type].unit : ""})`}
             </label>
             <input
               className={fieldCls}

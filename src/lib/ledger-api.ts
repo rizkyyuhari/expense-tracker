@@ -72,17 +72,6 @@ export const ledgerApi = {
     return req(`/api/accounts/${id}`, { method: "DELETE" }).then(() => {});
   },
 
-  /** Rekonsiliasi atomik di server (set saldo + catat selisih). */
-  adjustAccount(
-    id: string,
-    input: { actual: number; date: string; txId: string; amountIdr: number },
-  ): Promise<void> {
-    return req(`/api/accounts/${id}/adjust`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    }).then(() => {});
-  },
-
   createTx(input: {
     id: string;
     accountId: string;
