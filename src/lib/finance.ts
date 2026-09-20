@@ -69,6 +69,30 @@ export function categoryMeta(name: string) {
   );
 }
 
+/** Palet untuk kategori custom (di luar daftar bawaan). */
+const CATEGORY_PALETTE = [
+  "#0ea5e9",
+  "#8b5cf6",
+  "#ec4899",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#0284c7",
+  "#d946ef",
+  "#65a30d",
+  "#ea580c",
+];
+
+/** Warna kategori: bawaan pakai warna brand, custom dari hash nama (stabil). */
+export function colorForCategory(name: string): string {
+  const known = CATEGORIES.find((c) => c.name === name);
+  if (known) return known.color;
+  let h = 0;
+  for (let i = 0; i < name.length; i++)
+    h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return CATEGORY_PALETTE[h % CATEGORY_PALETTE.length] ?? "#64748b";
+}
+
 // ---------- format & konversi ----------
 
 export function formatIDR(n: number): string {

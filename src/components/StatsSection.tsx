@@ -17,7 +17,6 @@ import {
   ACCOUNT_META,
   Period,
   addDays,
-  categoryMeta,
   formatIDR,
   formatNative,
   parseKey,
@@ -26,6 +25,7 @@ import {
   toKey,
 } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
+import { useCategories } from "@/lib/useCategories";
 
 const PERIODS: { key: Period; label: string }[] = [
   { key: "day", label: "Hari" },
@@ -51,13 +51,22 @@ function shortIdr(v: number): string {
 
 export function StatsSection({ ledger }: { ledger: Ledger }) {
   const { txs, accounts, rates, today, deleteTransaction } = ledger;
+  const { iconOf, colorOf } = useCategories();
   const [period, setPeriod] = useState<Period>("week");
   const [anchor, setAnchor] = useState(today);
 
-  const summary = useMemo(
-    () => summarize(txs, accounts, rates, period, anchor),
-    [txs, accounts, rates, period, anchor],
-  );
+  const summary = useMemo(() => {
+    const s = summarize(txs, accounts, rates, period, anchor);
+    // Perkaya ikon/warna (termasuk kategori custom dari DB).
+    return {
+      ...s,
+      byCategory: s.byCategory.map((c) => ({
+        ...c,
+        icon: iconOf(c.name),
+        color: colorOf(c.name),
+      })),
+    };
+  }, [txs, accounts, rates, period, anchor, iconOf, colorOf]);
   const accType = useMemo(
     () => new Map(accounts.map((a) => [a.id, a])),
     [accounts],
@@ -237,15 +246,16 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
           <ul className="divide-y divide-outline-variant/60">
             {summary.filtered.map((t) => {
               const acc = accType.get(t.accountId);
-              const meta = categoryMeta(t.category);
+              const icon = iconOf(t.category);
+              const color = colorOf(t.category);
               const idr = toIdr(t.amount, acc?.type ?? "IDR", rates);
               return (
                 <li key={t.id} className="flex items-center gap-3 p-3">
                   <span
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-lg"
-                    style={{ background: meta.color + "22" }}
+                    style={{ background: color + "22" }}
                   >
-                    {meta.icon}
+                    {icon}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">

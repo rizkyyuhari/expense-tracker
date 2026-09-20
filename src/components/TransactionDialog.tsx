@@ -3,14 +3,20 @@
 import { useState } from "react";
 import {
   ACCOUNT_META,
-  CATEGORIES,
   TxKind,
   formatNative,
   roundNative,
   toKey,
 } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
+import { useCategories } from "@/lib/useCategories";
 import { Modal, PrimaryButton, TextButton, fieldCls, labelCls } from "./ui";
+
+const ICON_PRESETS = [
+  "🍜", "🛵", "🛍️", "🧾", "🎮", "💊", "💼", "📈",
+  "🏠", "🚗", "💡", "🏥", "✈️", "🎁", "📱", "👕",
+  "🐾", "🎓", "💸", "⭐",
+];
 
 export function TransactionDialog({
   ledger,
@@ -20,11 +26,16 @@ export function TransactionDialog({
   onClose: () => void;
 }) {
   const { accounts, addTransaction } = ledger;
+  const { list: categories, addCategory } = useCategories();
   const [kind, setKind] = useState<TxKind>("expense");
   const [mode, setMode] = useState<"amount" | "balance">("amount");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Makan");
+  const [addingCat, setAddingCat] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("⭐");
+  const [catBusy, setCatBusy] = useState(false);
   const [date, setDate] = useState(toKey(new Date()));
   const [note, setNote] = useState("");
 
@@ -173,17 +184,83 @@ export function TransactionDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Kategori</label>
-              <select
-                className={fieldCls}
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.icon} {c.name}
-                  </option>
-                ))}
-              </select>
+              {!addingCat ? (
+                <select
+                  className={fieldCls}
+                  value={category}
+                  onChange={(e) => {
+                    if (e.target.value === "__new") setAddingCat(true);
+                    else setCategory(e.target.value);
+                  }}
+                >
+                  {categories.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.icon} {c.name}
+                    </option>
+                  ))}
+                  <option value="__new">＋ Kategori baru…</option>
+                </select>
+              ) : (
+                <div className="rounded-2xl border border-outline-variant p-2.5">
+                  <input
+                    className={fieldCls}
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="Nama kategori"
+                    maxLength={30}
+                  />
+                  <div className="mt-2 grid grid-cols-10 gap-1">
+                    {ICON_PRESETS.map((ic) => (
+                      <button
+                        key={ic}
+                        type="button"
+                        onClick={() => setNewCatIcon(ic)}
+                        className={`rounded-lg py-1 text-base ${
+                          newCatIcon === ic
+                            ? "bg-primary-container ring-2 ring-primary"
+                            : "hover:bg-surface-container"
+                        }`}
+                      >
+                        {ic}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex gap-1">
+                    <button
+                      type="button"
+                      disabled={catBusy}
+                      onClick={() => {
+                        setAddingCat(false);
+                        setNewCatName("");
+                      }}
+                      className="rounded-full px-3 py-1.5 text-xs font-semibold text-on-surface-variant"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      disabled={catBusy || newCatName.trim().length === 0}
+                      onClick={() => {
+                        const nm = newCatName.trim();
+                        if (!nm) return;
+                        setCatBusy(true);
+                        void addCategory(nm, newCatIcon)
+                          .then((ok) => {
+                            if (ok) {
+                              setCategory(nm);
+                              setAddingCat(false);
+                              setNewCatName("");
+                            }
+                          })
+                          .finally(() => setCatBusy(false));
+                      }}
+                      className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary disabled:opacity-50"
+                    >
+                      {catBusy ? "Menyimpan…" : "Tambah"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <label className={labelCls}>Tanggal</label>

@@ -1,4 +1,4 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   ACCOUNT_META,
@@ -10,7 +10,7 @@ import {
 import { createTransaction } from "@/lib/ledger-service";
 import { getRates } from "@/lib/rates-server";
 import { geminiModel, parseReceipt } from "@/lib/gemini";
-import { accounts, botPending, pairingCodes, user } from "@/db/schema";
+import { accounts, botPending, categories, pairingCodes, user } from "@/db/schema";
 import {
   InlineButton,
   TgUpdate,
@@ -44,6 +44,21 @@ async function findUserByChat(chatId: number) {
 async function userAccounts(userId: string) {
   if (!db) return [];
   return db.select().from(accounts).where(eq(accounts.userId, userId));
+}
+
+/** Kategori dari DB (termasuk custom), fallback ke daftar statis. */
+async function botCategories(): Promise<{ name: string; icon: string }[]> {
+  if (!db) return CATEGORIES;
+  try {
+    const rows = await db
+      .select({ name: categories.name, icon: categories.icon })
+      .from(categories)
+      .orderBy(asc(categories.name));
+    if (rows.length > 0) return rows;
+  } catch {
+    // abaikan, pakai statis
+  }
+  return CATEGORIES;
 }
 
 const HELP = `Kirim <b>foto struk</b> untuk mencatat pengeluaran/pemasukan.\n\nPerintah:\n/link KODE — tautkan akun (kode dari web)\n/unlink — putus tautan\n/start — pesan ini`;
@@ -239,10 +254,11 @@ async function handleCallback(
       .update(botPending)
       .set({ accountId, step: "category", updatedAt: new Date() })
       .where(eq(botPending.chatId, String(chatId)));
+    const cats = await botCategories();
     const rows: InlineButton[][] = [];
-    for (let i = 0; i < CATEGORIES.length; i += 3) {
+    for (let i = 0; i < cats.length; i += 3) {
       rows.push(
-        CATEGORIES.slice(i, i + 3).map((c, j) => ({
+        cats.slice(i, i + 3).map((c, j) => ({
           text: `${c.icon} ${c.name}`,
           callback_data: `c:${i + j}`,
         })),
@@ -260,7 +276,8 @@ async function handleCallback(
 
   if (data.startsWith("c:")) {
     const idx = Number(data.slice(2));
-    const cat = CATEGORIES[idx];
+    const cats = await botCategories();
+    const cat = cats[idx];
     if (!cat) {
       await answerCallback(queryId, "Kategori tidak dikenal");
       return;
