@@ -59,6 +59,7 @@ export const CATEGORIES: { name: string; icon: string; color: string }[] = [
   { name: "Kesehatan", icon: "💊", color: "#10b981" },
   { name: "Gaji", icon: "💼", color: "#1976d2" },
   { name: "Investasi", icon: "📈", color: "#059669" },
+  { name: "Penyesuaian", icon: "⚖️", color: "#0284c7" },
   { name: "Lainnya", icon: "💸", color: "#64748b" },
 ];
 

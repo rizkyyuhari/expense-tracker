@@ -27,8 +27,15 @@ function AccountDialog({
     initial ? String(initial.balance) : "",
   );
 
+  // Pratinjau selisih saat koreksi: tercatat vs aktual.
+  const diff =
+    initial && balance !== ""
+      ? Number(balance) - initial.balance
+      : null;
+  const hasDiff = diff !== null && Number.isFinite(diff) && diff !== 0;
+
   return (
-    <Modal title={initial ? "Koreksi akun" : "Tambah akun"} onClose={onClose}>
+    <Modal title={initial ? "Sesuaikan saldo" : "Tambah akun"} onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -69,7 +76,9 @@ function AccountDialog({
         </div>
         <div>
           <label className={labelCls}>
-            Saldo awal ({ACCOUNT_META[type].unit})
+            {initial
+              ? `Saldo aktual saat ini (${ACCOUNT_META[type].unit})`
+              : `Saldo awal (${ACCOUNT_META[type].unit})`}
           </label>
           <input
             className={fieldCls}
@@ -80,6 +89,25 @@ function AccountDialog({
             onChange={(e) => setBalance(e.target.value)}
             placeholder="0"
           />
+          {initial ? (
+            <p className="mt-1 text-xs text-on-surface-variant">
+              Tercatat: {formatNative(initial.balance, initial.type)}
+            </p>
+          ) : null}
+          {hasDiff ? (
+            <p
+              className={`mt-2 rounded-xl px-3 py-2 text-sm font-semibold ${
+                (diff ?? 0) > 0
+                  ? "bg-success-container text-success"
+                  : "bg-error-container text-error"
+              }`}
+            >
+              Selisih {(diff ?? 0) > 0 ? "+" : "−"}
+              {formatNative(Math.abs(diff ?? 0), type)} akan dicatat otomatis
+              sebagai {(diff ?? 0) > 0 ? "Pemasukan" : "Pengeluaran"} •
+              Penyesuaian
+            </p>
+          ) : null}
         </div>
         <div className="mt-1 flex justify-end gap-1">
           <TextButton onClick={onClose}>Batal</TextButton>
@@ -91,7 +119,14 @@ function AccountDialog({
 }
 
 export function AccountsSection({ ledger }: { ledger: Ledger }) {
-  const { accounts, rates, addAccount, updateAccount, deleteAccount } = ledger;
+  const {
+    accounts,
+    rates,
+    addAccount,
+    updateAccount,
+    adjustBalance,
+    deleteAccount,
+  } = ledger;
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
 
@@ -132,7 +167,7 @@ export function AccountsSection({ ledger }: { ledger: Ledger }) {
                     onClick={() => setEditing(a)}
                     className="rounded-full px-2 py-1 text-xs font-semibold text-primary hover:bg-primary-container"
                   >
-                    Koreksi
+                    Sesuaikan
                   </button>
                   <button
                     onClick={() => {
@@ -171,9 +206,14 @@ export function AccountsSection({ ledger }: { ledger: Ledger }) {
         <AccountDialog
           initial={editing}
           onClose={() => setEditing(null)}
-          onSave={(v) =>
-            updateAccount(editing.id, { name: v.name, balance: v.balance })
-          }
+          onSave={(v) => {
+            // Saldo → rekonsiliasi (selisih tercatat otomatis);
+            // nama → update biasa.
+            if (v.balance !== editing.balance)
+              adjustBalance(editing.id, v.balance);
+            if (v.name !== editing.name)
+              updateAccount(editing.id, { name: v.name });
+          }}
         />
       ) : null}
     </section>

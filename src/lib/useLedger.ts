@@ -6,6 +6,7 @@ import {
   DEFAULT_RATES,
   Rates,
   Transaction,
+  formatNative,
   loadLocal,
   saveLocal,
   seedData,
@@ -287,6 +288,62 @@ export function useLedger(userId: string) {
     [accounts, txs, dbMode, mirror, persistAccounts, persistTxs],
   );
 
+  /**
+   * Rekonsiliasi: set saldo ke angka aktual. Selisihnya dicatat sebagai
+   * transaksi "Penyesuaian" (masuk bila aktual > tercatat, keluar bila
+   * sebaliknya) agar statistik tetap konsisten — tidak ada angka hilang.
+   * Mirror-nya SATU panggilan atomik agar server tidak double-hitung.
+   */
+  const adjustBalance = useCallback(
+    (id: string, actualRaw: number) => {
+      const acc = accounts.find((a) => a.id === id);
+      if (!acc || !Number.isFinite(actualRaw) || actualRaw < 0) return;
+      const round =
+        acc.type === "IDR" || acc.type === "CASH"
+          ? Math.round
+          : (n: number) => Number(n.toFixed(8));
+      const actual = round(actualRaw);
+      const diff = round(actual - acc.balance);
+      persistAccounts(
+        accounts.map((a) => (a.id === id ? { ...a, balance: actual } : a)),
+      );
+      if (diff !== 0) {
+        const abs = Math.abs(diff);
+        const tx: Transaction = {
+          id: uid(),
+          accountId: id,
+          kind: diff > 0 ? "income" : "expense",
+          amount: abs,
+          category: "Penyesuaian",
+          date: toKey(new Date()),
+          note: `Penyesuaian ke ${formatNative(actual, acc.type)}`,
+        };
+        persistTxs([tx, ...txs]);
+        if (dbMode) {
+          mirror(() =>
+            ledgerApi.adjustAccount(id, {
+              actual,
+              date: tx.date,
+              txId: tx.id,
+              amountIdr: toIdr(abs, acc.type, effectiveRates),
+            }),
+          );
+        }
+      } else if (dbMode) {
+        mirror(() => ledgerApi.patchAccount(id, { balance: actual }));
+      }
+    },
+    [
+      accounts,
+      txs,
+      dbMode,
+      effectiveRates,
+      mirror,
+      persistAccounts,
+      persistTxs,
+    ],
+  );
+
   const setManualGoldPrice = useCallback((v: number | null) => {
     setManualGold(v);
     saveLocal(storeKeys.manualGold, v);
@@ -330,6 +387,7 @@ export function useLedger(userId: string) {
     addAccount,
     updateAccount,
     deleteAccount,
+    adjustBalance,
     setManualGoldPrice,
     reseed,
     clearAll,
