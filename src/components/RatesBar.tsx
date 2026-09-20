@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { formatIDR } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
+import { useLang } from "@/i18n/lang";
 
 export function RatesBar({ ledger }: { ledger: Ledger }) {
+  const { t, dateLocale } = useLang();
   const { rates, manualGold, setManualGoldPrice, refreshRates, ratesLoading } =
     ledger;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(manualGold ? String(manualGold) : "");
 
-  const updated = new Date(rates.updatedAt).toLocaleString("id-ID", {
+  const updated = new Date(rates.updatedAt).toLocaleString(dateLocale, {
     day: "numeric",
     month: "short",
     hour: "2-digit",
@@ -27,18 +29,19 @@ export function RatesBar({ ledger }: { ledger: Ledger }) {
           </span>
         </span>
         <span>
-          <span className="font-semibold">🪙 Emas </span>
+          <span className="font-semibold">🪙 {t("app.gold")} </span>
           <span className="font-semibold text-primary">
-            {formatIDR(rates.goldIdrPerGram)}/gram
+            {formatIDR(rates.goldIdrPerGram)}
+            {t("app.perGram")}
           </span>
           {manualGold ? (
             <span className="ml-1 rounded-full bg-secondary-container px-2 py-0.5 text-xs font-medium text-on-secondary-container">
-              manual
+              {t("rates.manual")}
             </span>
           ) : null}
         </span>
         <span className="text-xs text-on-surface-variant">
-          update {updated} • {rates.source}
+          {t("rates.updated")} {updated} • {rates.source}
         </span>
         <span className="ms-auto flex gap-2">
           <button
@@ -48,14 +51,14 @@ export function RatesBar({ ledger }: { ledger: Ledger }) {
             }}
             className="rounded-full border border-outline-variant px-3 py-1.5 text-xs font-semibold text-primary hover:bg-surface-container-low"
           >
-            {manualGold ? "Ubah harga Antam" : "Set harga Antam"}
+            {manualGold ? t("rates.changeAntam") : t("rates.setAntam")}
           </button>
           <button
             onClick={() => void refreshRates()}
             disabled={ratesLoading}
             className="rounded-full border border-outline-variant px-3 py-1.5 text-xs font-semibold text-primary hover:bg-surface-container-low disabled:opacity-50"
           >
-            {ratesLoading ? "Memuat…" : "↻ Refresh"}
+            {ratesLoading ? t("common.loading") : t("rates.refresh")}
           </button>
         </span>
       </div>
@@ -71,7 +74,7 @@ export function RatesBar({ ledger }: { ledger: Ledger }) {
         >
           <input
             inputMode="numeric"
-            placeholder="cth: 2050000 (Rp/gram Antam)"
+            placeholder={t("rates.antamPh")}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm outline-none focus:border-primary"
@@ -80,7 +83,7 @@ export function RatesBar({ ledger }: { ledger: Ledger }) {
             type="submit"
             className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary"
           >
-            Simpan
+            {t("common.save")}
           </button>
           {manualGold ? (
             <button
@@ -91,7 +94,7 @@ export function RatesBar({ ledger }: { ledger: Ledger }) {
               }}
               className="shrink-0 rounded-full px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-container"
             >
-              Auto
+              {t("rates.auto")}
             </button>
           ) : null}
         </form>

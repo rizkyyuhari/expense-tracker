@@ -11,14 +11,24 @@ import { TransactionDialog } from "@/components/TransactionDialog";
 import { signOut, useSession } from "@/lib/auth-client";
 import { formatIDR, totalBalanceIdr } from "@/lib/finance";
 import { useLedger } from "@/lib/useLedger";
+import { LangProvider, LangToggle, useLang } from "@/i18n/lang";
 
 export default function Home() {
+  return (
+    <LangProvider>
+      <Root />
+    </LangProvider>
+  );
+}
+
+function Root() {
   const { data: session, isPending } = useSession();
+  const { t } = useLang();
 
   if (isPending) {
     return (
       <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center p-6">
-        <p className="text-sm text-on-surface-variant">Memeriksa sesi…</p>
+        <p className="text-sm text-on-surface-variant">{t("app.checkingSession")}</p>
       </div>
     );
   }
@@ -39,12 +49,13 @@ function LedgerApp({
   displayName: string;
 }) {
   const ledger = useLedger(userId);
+  const { t } = useLang();
   const [showTx, setShowTx] = useState(false);
 
   if (!ledger.ready) {
     return (
       <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center p-6">
-        <p className="text-sm text-on-surface-variant">Memuat dompet…</p>
+        <p className="text-sm text-on-surface-variant">{t("app.loadingWallet")}</p>
       </div>
     );
   }
@@ -65,6 +76,7 @@ function LedgerApp({
           </p>
         </div>
         <span className="ms-auto flex items-center gap-2">
+          <LangToggle />
           {/* Badge provider DB hanya di development — disembunyikan di
               production agar tidak membocorkan info infra ke publik. */}
           {process.env.NODE_ENV === "development" ? (
@@ -85,7 +97,7 @@ function LedgerApp({
             }}
             className="rounded-full border border-outline-variant bg-surface px-3 py-1 text-xs font-semibold text-on-surface-variant hover:text-error"
           >
-            Keluar
+            {t("app.signOut")}
           </button>
         </span>
       </header>
@@ -93,14 +105,16 @@ function LedgerApp({
       {/* Hero total balance */}
       <section className="mt-3 rounded-[28px] bg-primary-container p-6 text-on-primary-container">
         <p className="text-sm font-medium opacity-70">
-          Total saldo semua akun (Rupiah)
+          {t("app.totalBalance")}
         </p>
         <p className="mt-1 text-4xl font-bold tracking-tight">
           {formatIDR(total)}
         </p>
         <p className="mt-2 text-xs opacity-70">
-          USDT ≈ {formatIDR(ledger.rates.usdtIdr)}/koin • Emas ≈{" "}
-          {formatIDR(ledger.rates.goldIdrPerGram)}/gram
+          USDT ≈ {formatIDR(ledger.rates.usdtIdr)}
+          {t("app.perCoin")} • {t("app.gold")} ≈{" "}
+          {formatIDR(ledger.rates.goldIdrPerGram)}
+          {t("app.perGram")}
         </p>
       </section>
 

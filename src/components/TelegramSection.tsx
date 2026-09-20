@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang } from "@/i18n/lang";
 
 interface Status {
   linked: boolean;
@@ -10,6 +11,7 @@ interface Status {
 
 /** Kartu "Tautkan Telegram" — pairing bot struk-OCR ke akun ini. */
 export function TelegramSection() {
+  const { t, dateLocale } = useLang();
   const [status, setStatus] = useState<Status | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function TelegramSection() {
         s ? { ...s, botUsername: j.botUsername } : s,
       );
     } catch {
-      setError("Gagal membuat kode. Coba lagi.");
+      setError(t("tg.codeFail"));
     } finally {
       setBusy(false);
     }
@@ -55,46 +57,40 @@ export function TelegramSection() {
           ✈️
         </span>
         <div>
-          <h2 className="text-base font-semibold">Bot Telegram Struk</h2>
+          <h2 className="text-base font-semibold">{t("tg.title")}</h2>
           <p className="text-xs text-on-surface-variant">
-            Foto struk → otomatis tercatat
+            {t("tg.subtitle")}
           </p>
         </div>
         {status?.linked ? (
           <span className="ms-auto rounded-full bg-success-container px-3 py-1 text-xs font-semibold text-success">
-            ✓ Terhubung
+            {t("tg.connected")}
           </span>
         ) : null}
       </div>
 
       {!status ? (
-        <p className="mt-3 text-sm text-on-surface-variant">Memuat status…</p>
+        <p className="mt-3 text-sm text-on-surface-variant">{t("tg.loading")}</p>
       ) : !status.configured ? (
         <p className="mt-3 text-sm text-on-surface-variant">
-          Bot belum dikonfigurasi di server. Minta admin pasang{" "}
-          <code className="rounded bg-surface-container px-1 font-mono text-xs">
-            TELEGRAM_BOT_TOKEN
-          </code>{" "}
-          lalu tautkan ulang.
+          {t("tg.notConfigured")}
         </p>
       ) : status.linked ? (
         <p className="mt-3 text-sm text-on-surface-variant">
-          Telegram-mu tertaut. Kirim <b>foto struk</b> ke bot untuk mencatat
-          pengeluaran/pemasukan. Kirim <code className="font-mono text-xs">/unlink</code> ke
-          bot untuk memutus tautan.
+          {t("tg.linkedInfo")}
         </p>
       ) : code ? (
         <div className="mt-3 rounded-2xl bg-surface-container-low p-4 text-center">
           <p className="text-xs text-on-surface-variant">
-            Kirim perintah ini ke bot (berlaku 10 menit):
+            {t("tg.sendCommand")}
           </p>
           <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-primary">
             /link {code}
           </p>
           {expiresAt ? (
             <p className="mt-1 text-xs text-on-surface-variant">
-              sampai{" "}
-              {new Date(expiresAt).toLocaleTimeString("id-ID", {
+              {t("tg.until")}{" "}
+              {new Date(expiresAt).toLocaleTimeString(dateLocale, {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
@@ -107,7 +103,7 @@ export function TelegramSection() {
               rel="noopener noreferrer"
               className="mt-2 inline-block rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary"
             >
-              Buka bot di Telegram
+              {t("tg.openBot")}
             </a>
           ) : null}
           <div>
@@ -116,14 +112,14 @@ export function TelegramSection() {
               disabled={busy}
               className="mt-2 rounded-full px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-container disabled:opacity-50"
             >
-              Buat kode baru
+              {t("tg.newCode")}
             </button>
           </div>
         </div>
       ) : (
         <div className="mt-3">
           <p className="text-sm text-on-surface-variant">
-            Tautkan chat Telegram-mu agar foto struk bisa dicatat ke dompet ini.
+            {t("tg.intro")}
           </p>
           {error ? <p className="mt-2 text-sm font-medium text-error">{error}</p> : null}
           <button
@@ -131,7 +127,7 @@ export function TelegramSection() {
             disabled={busy}
             className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-50"
           >
-            {busy ? "Membuat…" : "Buat kode pairing"}
+            {busy ? t("tg.creating") : t("tg.makeCode")}
           </button>
         </div>
       )}

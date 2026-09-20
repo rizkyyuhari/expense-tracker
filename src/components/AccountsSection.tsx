@@ -10,6 +10,7 @@ import {
   toIdr,
 } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
+import { useLang } from "@/i18n/lang";
 import { Modal, PrimaryButton, TextButton, fieldCls, labelCls } from "./ui";
 
 function AccountDialog({
@@ -26,9 +27,10 @@ function AccountDialog({
   const [balance, setBalance] = useState(
     initial ? String(initial.balance) : "",
   );
+  const { t } = useLang();
 
   return (
-    <Modal title={initial ? "Koreksi akun" : "Tambah akun"} onClose={onClose}>
+    <Modal title={initial ? t("accounts.dlgEdit") : t("accounts.dlgAdd")} onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -43,17 +45,17 @@ function AccountDialog({
         className="flex flex-col gap-3"
       >
         <div>
-          <label className={labelCls}>Nama akun</label>
+          <label className={labelCls}>{t("accounts.name")}</label>
           <input
             className={fieldCls}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="cth: Bank BCA / Dompet / Binance"
+            placeholder={t("accounts.namePh")}
             autoFocus
           />
         </div>
         <div>
-          <label className={labelCls}>Jenis aset</label>
+          <label className={labelCls}>{t("accounts.type")}</label>
           <select
             className={fieldCls}
             value={type}
@@ -69,7 +71,7 @@ function AccountDialog({
         </div>
         <div>
           <label className={labelCls}>
-            Saldo ({ACCOUNT_META[type].unit})
+            {t("accounts.balance", { unit: ACCOUNT_META[type].unit })}
           </label>
           <input
             className={fieldCls}
@@ -82,13 +84,13 @@ function AccountDialog({
           />
           {initial ? (
             <p className="mt-1 text-xs text-on-surface-variant">
-              Koreksi hanya membetulkan angka — tidak mencatat transaksi.
+              {t("accounts.balanceHint")}
             </p>
           ) : null}
         </div>
         <div className="mt-1 flex justify-end gap-1">
-          <TextButton onClick={onClose}>Batal</TextButton>
-          <PrimaryButton type="submit">Simpan</PrimaryButton>
+          <TextButton onClick={onClose}>{t("common.cancel")}</TextButton>
+          <PrimaryButton type="submit">{t("common.save")}</PrimaryButton>
         </div>
       </form>
     </Modal>
@@ -97,23 +99,24 @@ function AccountDialog({
 
 export function AccountsSection({ ledger }: { ledger: Ledger }) {
   const { accounts, rates, addAccount, updateAccount, deleteAccount } = ledger;
+  const { t } = useLang();
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
 
   return (
     <section>
       <div className="mb-3 flex items-center">
-        <h2 className="text-base font-semibold">Akun & Saldo</h2>
+        <h2 className="text-base font-semibold">{t("accounts.title")}</h2>
         <button
           onClick={() => setShowAdd(true)}
           className="ms-auto rounded-full border border-outline-variant bg-surface px-3.5 py-1.5 text-sm font-semibold text-primary hover:bg-surface-container-low"
         >
-          ＋ Tambah akun
+          {t("accounts.add")}
         </button>
       </div>
       {accounts.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-outline-variant bg-surface p-6 text-center text-sm text-on-surface-variant">
-          Belum ada akun. Tambahkan akun Rupiah, cash, USDT, atau emas dulu.
+          {t("accounts.empty")}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -137,20 +140,20 @@ export function AccountsSection({ ledger }: { ledger: Ledger }) {
                     onClick={() => setEditing(a)}
                     className="rounded-full px-2 py-1 text-xs font-semibold text-primary hover:bg-primary-container"
                   >
-                    Koreksi
+                    {t("accounts.editBtn")}
                   </button>
                   <button
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Hapus akun "${a.name}" beserta semua transaksinya?`,
+                          t("accounts.deleteConfirm", { name: a.name }),
                         )
                       )
                         deleteAccount(a.id);
                     }}
                     className="rounded-full px-2 py-1 text-xs font-semibold text-error hover:bg-error-container"
                   >
-                    Hapus
+                    {t("accounts.deleteBtn")}
                   </button>
                 </span>
               </div>

@@ -2,27 +2,30 @@
 
 import { useState } from "react";
 import { signIn, signUp } from "@/lib/auth-client";
+import { TKey } from "@/i18n/dict";
+import { useLang } from "@/i18n/lang";
 import { PrimaryButton, fieldCls, labelCls } from "./ui";
 
-function friendlyError(code: string | undefined): string {
+function codeToKey(code: string | undefined): TKey {
   switch (code) {
     case "INVALID_EMAIL_OR_PASSWORD":
     case "INVALID_CREDENTIALS":
-      return "Email atau password salah.";
+      return "auth.errCredentials";
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
-      return "Email sudah terdaftar. Silakan masuk.";
+      return "auth.errExists";
     case "WEAK_PASSWORD":
-      return "Password minimal 8 karakter.";
+      return "auth.errWeak";
     case "INVALID_EMAIL":
-      return "Format email tidak valid.";
+      return "auth.errEmail";
     default:
-      return "Gagal. Periksa koneksi lalu coba lagi.";
+      return "auth.errGeneric";
   }
 }
 
 /** Layar Masuk / Daftar — M3, satu-satunya pintu sebelum dompet. */
 export function AuthScreen() {
+  const { t } = useLang();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -44,12 +47,12 @@ export function AuthScreen() {
             })
           : await signIn.email({ email: email.trim(), password });
       if (res.error) {
-        setError(friendlyError(res.error.code));
+        setError(t(codeToKey(res.error.code)));
         return;
       }
       window.location.reload();
     } catch {
-      setError(friendlyError(undefined));
+      setError(t("auth.errGeneric"));
     } finally {
       setBusy(false);
     }
@@ -65,7 +68,7 @@ export function AuthScreen() {
           <div>
             <h1 className="text-xl font-bold">DompetKu</h1>
             <p className="text-xs text-on-surface-variant">
-              Expense tracker • IDR, USDT & emas
+              {t("auth.subtitle")}
             </p>
           </div>
         </div>
@@ -89,7 +92,7 @@ export function AuthScreen() {
                 }`}
               >
                 {active ? "✓ " : ""}
-                {m === "in" ? "Masuk" : "Daftar"}
+                {m === "in" ? t("auth.signIn") : t("auth.signUp")}
               </button>
             );
           })}
@@ -98,31 +101,31 @@ export function AuthScreen() {
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
           {mode === "up" ? (
             <div>
-              <label className={labelCls}>Nama</label>
+              <label className={labelCls}>{t("auth.name")}</label>
               <input
                 className={fieldCls}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Nama kamu"
+                placeholder={t("auth.namePh")}
                 autoComplete="name"
               />
             </div>
           ) : null}
           <div>
-            <label className={labelCls}>Email</label>
+            <label className={labelCls}>{t("auth.email")}</label>
             <input
               className={fieldCls}
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="kamu@email.com"
+              placeholder={t("auth.emailPh")}
               autoComplete="email"
               autoFocus
             />
           </div>
           <div>
-            <label className={labelCls}>Password (min. 8 karakter)</label>
+            <label className={labelCls}>{t("auth.password")}</label>
             <input
               className={fieldCls}
               type="password"
@@ -142,16 +145,15 @@ export function AuthScreen() {
           <div className="mt-1">
             <PrimaryButton type="submit" disabled={busy}>
               {busy
-                ? "Memproses…"
+                ? t("auth.busy")
                 : mode === "in"
-                  ? "Masuk ke dompet"
-                  : "Buat akun"}
+                  ? t("auth.submitIn")
+                  : t("auth.submitUp")}
             </PrimaryButton>
           </div>
         </form>
         <p className="mt-4 text-center text-xs text-on-surface-variant">
-          Setiap akun login punya dompet sendiri — data tidak tercampur antar
-          user.
+          {t("auth.footnote")}
         </p>
       </div>
     </div>

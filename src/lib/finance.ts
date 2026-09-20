@@ -266,10 +266,14 @@ export function periodRange(
   };
 }
 
-export function buildBuckets(period: Period, anchorKey: string): Bucket[] {
+export function buildBuckets(
+  period: Period,
+  anchorKey: string,
+  dayLabel = "Hari ini",
+): Bucket[] {
   const a = parseKey(anchorKey);
   if (period === "day")
-    return [{ key: anchorKey, label: "Hari ini", income: 0, expense: 0 }];
+    return [{ key: anchorKey, label: dayLabel, income: 0, expense: 0 }];
   if (period === "week")
     return Array.from({ length: 7 }, (_, i) => {
       const d = addDays(a, i - 6);
@@ -316,10 +320,12 @@ export function summarize(
   rates: Rates,
   period: Period,
   anchorKey: string,
+  locale = "id-ID",
+  dayLabel = "Hari ini",
 ): Summary {
   const { start, end } = periodRange(period, anchorKey);
   const accType = new Map(accounts.map((a) => [a.id, a.type]));
-  const buckets = buildBuckets(period, anchorKey);
+  const buckets = buildBuckets(period, anchorKey, dayLabel);
   const byBucket = new Map(buckets.map((b) => [b.key, b]));
   const byCat = new Map<string, number>();
   const filtered: Transaction[] = [];
@@ -350,7 +356,7 @@ export function summarize(
     .sort((a, b) => b.total - a.total);
 
   const fmt = (k: string) =>
-    parseKey(k).toLocaleDateString("id-ID", {
+    parseKey(k).toLocaleDateString(locale, {
       day: "numeric",
       month: "short",
       year: "numeric",

@@ -26,13 +26,14 @@ import {
 } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
 import { useCategories } from "@/lib/useCategories";
+import { useLang } from "@/i18n/lang";
 
-const PERIODS: { key: Period; label: string }[] = [
-  { key: "day", label: "Hari" },
-  { key: "week", label: "Minggu" },
-  { key: "month", label: "Bulan" },
-  { key: "year", label: "Tahun" },
-];
+const PERIOD_KEYS = [
+  { key: "day", labelKey: "stats.day" },
+  { key: "week", labelKey: "stats.week" },
+  { key: "month", labelKey: "stats.month" },
+  { key: "year", labelKey: "stats.year" },
+] as const;
 
 function shiftAnchor(period: Period, anchor: string, dir: 1 | -1): string {
   const d = parseKey(anchor);
@@ -52,11 +53,22 @@ function shortIdr(v: number): string {
 export function StatsSection({ ledger }: { ledger: Ledger }) {
   const { txs, accounts, rates, today, deleteTransaction } = ledger;
   const { iconOf, colorOf } = useCategories();
+  const { t, dateLocale } = useLang();
   const [period, setPeriod] = useState<Period>("week");
   const [anchor, setAnchor] = useState(today);
 
+  const seriesIn = t("tx.kindIncome");
+  const seriesOut = t("tx.kindExpense");
   const summary = useMemo(() => {
-    const s = summarize(txs, accounts, rates, period, anchor);
+    const s = summarize(
+      txs,
+      accounts,
+      rates,
+      period,
+      anchor,
+      dateLocale,
+      t("stats.today"),
+    );
     // Perkaya ikon/warna (termasuk kategori custom dari DB).
     return {
       ...s,
@@ -66,7 +78,7 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
         color: colorOf(c.name),
       })),
     };
-  }, [txs, accounts, rates, period, anchor, iconOf, colorOf]);
+  }, [txs, accounts, rates, period, anchor, dateLocale, iconOf, colorOf, t]);
   const accType = useMemo(
     () => new Map(accounts.map((a) => [a.id, a])),
     [accounts],
@@ -74,31 +86,38 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
 
   const barData = summary.buckets.map((b) => ({
     label: b.label,
-    Pemasukan: Math.round(b.income),
-    Pengeluaran: Math.round(b.expense),
+    [seriesIn]: Math.round(b.income),
+    [seriesOut]: Math.round(b.expense),
   }));
+
+  const flowLabel =
+    period === "day" || period === "week"
+      ? t("stats.flowDay")
+      : period === "month"
+        ? t("stats.flowDate")
+        : t("stats.flowMonth");
 
   return (
     <section>
-      <h2 className="mb-3 text-base font-semibold">Statistik</h2>
+      <h2 className="mb-3 text-base font-semibold">{t("stats.title")}</h2>
 
       {/* Ringkasan */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-3xl bg-success-container p-4">
-          <p className="text-xs font-medium opacity-70">Masuk</p>
+          <p className="text-xs font-medium opacity-70">{t("stats.in")}</p>
           <p className="truncate text-sm font-bold sm:text-base">
             {formatIDR(summary.income)}
           </p>
         </div>
         <div className="rounded-3xl bg-error-container p-4">
-          <p className="text-xs font-medium opacity-70">Keluar</p>
+          <p className="text-xs font-medium opacity-70">{t("stats.out")}</p>
           <p className="truncate text-sm font-bold sm:text-base">
             {formatIDR(summary.expense)}
           </p>
         </div>
         <div className="rounded-3xl bg-primary-container p-4">
           <p className="text-xs font-medium text-on-primary-container/70">
-            Bersih
+            {t("stats.net")}
           </p>
           <p className="truncate text-sm font-bold text-on-primary-container sm:text-base">
             {formatIDR(summary.net)}
@@ -110,7 +129,7 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
       <div className="mt-3 rounded-3xl border border-outline-variant bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-full bg-surface-container p-1">
-            {PERIODS.map((p) => (
+            {PERIOD_KEYS.map((p) => (
               <button
                 key={p.key}
                 onClick={() => setPeriod(p.key)}
@@ -121,7 +140,7 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
                 }`}
               >
                 {period === p.key ? "✓ " : ""}
-                {p.label}
+                {t(p.labelKey)}
               </button>
             ))}
           </div>
@@ -129,21 +148,21 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
             <button
               onClick={() => setAnchor(shiftAnchor(period, anchor, -1))}
               className="rounded-full px-2.5 py-1 font-bold text-primary hover:bg-primary-container"
-              aria-label="Periode sebelumnya"
+              aria-label="‹"
             >
               ‹
             </button>
             <button
               onClick={() => setAnchor(today)}
               className="min-w-28 text-center font-medium"
-              title="Kembali ke hari ini"
+              title={t("stats.today")}
             >
               {summary.rangeLabel}
             </button>
             <button
               onClick={() => setAnchor(shiftAnchor(period, anchor, 1))}
               className="rounded-full px-2.5 py-1 font-bold text-primary hover:bg-primary-container"
-              aria-label="Periode berikutnya"
+              aria-label="›"
             >
               ›
             </button>
@@ -154,7 +173,7 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3">
             <p className="mb-2 text-xs font-medium text-on-surface-variant">
-              Arus kas per {period === "day" ? "hari" : period === "week" ? "hari" : period === "month" ? "tanggal" : "bulan"}
+              {flowLabel}
             </p>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -176,12 +195,12 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
                     contentStyle={{ borderRadius: 16, fontSize: 12 }}
                   />
                   <Bar
-                    dataKey="Pemasukan"
+                    dataKey={seriesIn}
                     fill="#1b7a3d"
                     radius={[6, 6, 0, 0]}
                   />
                   <Bar
-                    dataKey="Pengeluaran"
+                    dataKey={seriesOut}
                     fill="#1976d2"
                     radius={[6, 6, 0, 0]}
                   />
@@ -191,11 +210,11 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
           </div>
           <div className="lg:col-span-2">
             <p className="mb-2 text-xs font-medium text-on-surface-variant">
-              Pengeluaran per kategori
+              {t("stats.byCategory")}
             </p>
             {summary.byCategory.length === 0 ? (
               <p className="flex h-56 items-center justify-center rounded-2xl bg-surface-container-low text-sm text-on-surface-variant">
-                Belum ada pengeluaran di periode ini.
+                {t("stats.emptyCategory")}
               </p>
             ) : (
               <div className="h-56">
@@ -240,17 +259,17 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
       <div className="mt-3 rounded-3xl border border-outline-variant bg-surface p-2">
         {summary.filtered.length === 0 ? (
           <p className="p-6 text-center text-sm text-on-surface-variant">
-            Belum ada transaksi di periode ini. Tekan “Catat” untuk menambah.
+            {t("stats.emptyTx")}
           </p>
         ) : (
           <ul className="divide-y divide-outline-variant/60">
-            {summary.filtered.map((t) => {
-              const acc = accType.get(t.accountId);
-              const icon = iconOf(t.category);
-              const color = colorOf(t.category);
-              const idr = toIdr(t.amount, acc?.type ?? "IDR", rates);
+            {summary.filtered.map((tx) => {
+              const acc = accType.get(tx.accountId);
+              const icon = iconOf(tx.category);
+              const color = colorOf(tx.category);
+              const idr = toIdr(tx.amount, acc?.type ?? "IDR", rates);
               return (
-                <li key={t.id} className="flex items-center gap-3 p-3">
+                <li key={tx.id} className="flex items-center gap-3 p-3">
                   <span
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-lg"
                     style={{ background: color + "22" }}
@@ -259,24 +278,24 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">
-                      {t.note || t.category}
+                      {tx.note || tx.category}
                     </p>
                     <p className="truncate text-xs text-on-surface-variant">
-                      {new Date(t.date + "T00:00").toLocaleDateString("id-ID", {
+                      {new Date(tx.date + "T00:00").toLocaleDateString(dateLocale, {
                         day: "numeric",
                         month: "short",
                       })}{" "}
-                      • {acc?.name ?? "—"} • {t.category}
+                      • {acc?.name ?? "—"} • {tx.category}
                     </p>
                   </div>
                   <div className="text-right">
                     <p
-                      className={`text-sm font-bold ${t.kind === "income" ? "text-success" : "text-error"}`}
+                      className={`text-sm font-bold ${tx.kind === "income" ? "text-success" : "text-error"}`}
                     >
-                      {t.kind === "income" ? "+" : "−"}
+                      {tx.kind === "income" ? "+" : "−"}
                       {acc
-                        ? formatNative(t.amount, acc.type)
-                        : formatIDR(t.amount)}
+                        ? formatNative(tx.amount, acc.type)
+                        : formatIDR(tx.amount)}
                     </p>
                     {acc && acc.type !== "IDR" && acc.type !== "CASH" ? (
                       <p className="text-xs text-on-surface-variant">
@@ -286,11 +305,11 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
                   </div>
                   <button
                     onClick={() => {
-                      if (window.confirm("Hapus transaksi ini? Saldo akun akan dikembalikan."))
-                        deleteTransaction(t.id);
+                      if (window.confirm(t("stats.deleteConfirm")))
+                        deleteTransaction(tx.id);
                     }}
                     className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-on-surface-variant hover:bg-error-container hover:text-error"
-                    aria-label="Hapus transaksi"
+                    aria-label="✕"
                   >
                     ✕
                   </button>
@@ -301,8 +320,7 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
         )}
       </div>
       <p className="mt-2 text-xs text-on-surface-variant">
-        {ACCOUNT_META.USDT.icon} Nominal USDT & emas otomatis dikonversi ke
-        Rupiah memakai kurs di atas.
+        {ACCOUNT_META.USDT.icon} {t("stats.footnote")}
       </p>
     </section>
   );

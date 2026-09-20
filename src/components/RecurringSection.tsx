@@ -3,37 +3,26 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ACCOUNT_META,
-  AccountType,
   TxKind,
-  WEEKDAY_SHORT,
   formatNative,
   previewRecurring,
 } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
 import { useCategories } from "@/lib/useCategories";
+import { useLang } from "@/i18n/lang";
 import { Modal, PrimaryButton, TextButton, fieldCls, labelCls } from "./ui";
 
 interface Rule {
   id: string;
   accountId: string;
   accountName: string;
-  accountType: AccountType;
+  accountType: "IDR" | "CASH" | "USDT" | "GOLD";
   kind: TxKind;
   amount: number;
   category: string;
   note?: string;
   dayOfMonth: number;
   active: boolean;
-}
-
-function nextLabel(day: number): string {
-  const p = previewRecurring(day, 1)[0];
-  if (!p) return "—";
-  const tgl = `${p.weekday}, ${p.effective.getDate()} ${p.monthLabel} ${p.year}`;
-  if (!p.shifted) return tgl;
-  const schedWd =
-    WEEKDAY_SHORT[new Date(p.year, p.monthIdx, p.scheduledDay).getDay()] ?? "";
-  return `${tgl} (maju — tgl ${p.scheduledDay} = ${schedWd})`;
 }
 
 function RuleDialog({
@@ -48,6 +37,7 @@ function RuleDialog({
   onSaved: () => void;
 }) {
   const { list: categories } = useCategories();
+  const { t, dateLocale } = useLang();
   const [kind, setKind] = useState<TxKind>(initial?.kind ?? "income");
   const [accountId, setAccountId] = useState(
     initial?.accountId ?? accounts[0]?.id ?? "",
@@ -67,6 +57,13 @@ function RuleDialog({
   const validDay = Number.isInteger(dayNum) && dayNum >= 1 && dayNum <= 31;
   const valid =
     accountId && Number(amount) > 0 && validDay && category.trim().length > 0;
+
+  const monthFmt = (y: number, m: number) =>
+    new Intl.DateTimeFormat(dateLocale, { month: "long" }).format(
+      new Date(y, m, 1),
+    );
+  const wdFmt = (d: Date) =>
+    new Intl.DateTimeFormat(dateLocale, { weekday: "short" }).format(d);
 
   async function save() {
     if (!valid) return;
@@ -93,7 +90,7 @@ function RuleDialog({
       onSaved();
       onClose();
     } catch {
-      setError("Gagal menyimpan. Coba lagi.");
+      setError(t("recur.saveFail"));
     } finally {
       setBusy(false);
     }
@@ -101,7 +98,7 @@ function RuleDialog({
 
   return (
     <Modal
-      title={initial ? "Ubah jadwal rutin" : "Tambah pemasukan rutin"}
+      title={initial ? t("recur.dlgEdit") : t("recur.dlgAdd")}
       onClose={onClose}
     >
       <div className="flex flex-col gap-3">
@@ -119,12 +116,12 @@ function RuleDialog({
                   : "text-on-surface-variant"
               }`}
             >
-              {k === "income" ? "＋ Pemasukan" : "− Pengeluaran"}
+              {k === "income" ? t("tx.income") : t("tx.expense")}
             </button>
           ))}
         </div>
         <div>
-          <label className={labelCls}>Masuk ke akun</label>
+          <label className={labelCls}>{t("recur.toAccount")}</label>
           <select
             className={fieldCls}
             value={accountId}
@@ -139,7 +136,7 @@ function RuleDialog({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>Nominal / bulan</label>
+            <label className={labelCls}>{t("recur.amountMonth")}</label>
             <input
               className={fieldCls}
               type="number"
@@ -151,7 +148,7 @@ function RuleDialog({
             />
           </div>
           <div>
-            <label className={labelCls}>Tanggal (1–31)</label>
+            <label className={labelCls}>{t("recur.day")}</label>
             <input
               className={fieldCls}
               type="number"
@@ -165,7 +162,7 @@ function RuleDialog({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>Kategori</label>
+            <label className={labelCls}>{t("tx.category")}</label>
             <select
               className={fieldCls}
               value={category}
@@ -179,33 +176,31 @@ function RuleDialog({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Catatan (opsional)</label>
+            <label className={labelCls}>{t("tx.note")}</label>
             <input
               className={fieldCls}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Gaji Januari"
+              placeholder={t("recur.notePh")}
             />
           </div>
         </div>
         {validDay ? (
           <div className="rounded-2xl bg-surface-container-low px-3.5 py-2.5 text-xs text-on-surface-variant">
-            <p className="font-semibold text-on-surface">Berikutnya:</p>
+            <p className="font-semibold text-on-surface">{t("recur.upcoming")}</p>
             {previewRecurring(dayNum, 3).map((p) => (
               <p key={p.effectiveKey}>
-                • {p.weekday}, {p.effective.getDate()} {p.monthLabel}{" "}
-                {p.year}
+                • {wdFmt(p.effective)}, {p.effective.getDate()}{" "}
+                {monthFmt(p.year, p.monthIdx)} {p.year}
                 {p.shifted ? (
                   <span>
                     {" "}
-                    (maju — tgl {p.scheduledDay} hari libur)
+                    {t("recur.movedUp", { day: p.scheduledDay })}
                   </span>
                 ) : null}
               </p>
             ))}
-            <p className="mt-1">
-              Bila tanggal jatuh Sabtu/Minggu, tercatat di Jumat sebelumnya.
-            </p>
+            <p className="mt-1">{t("recur.weekendNote")}</p>
           </div>
         ) : null}
         {error ? (
@@ -214,9 +209,9 @@ function RuleDialog({
           </p>
         ) : null}
         <div className="mt-1 flex justify-end gap-1">
-          <TextButton onClick={onClose}>Batal</TextButton>
+          <TextButton onClick={onClose}>{t("common.cancel")}</TextButton>
           <PrimaryButton onClick={() => void save()} disabled={!valid || busy}>
-            {busy ? "Menyimpan…" : "Simpan"}
+            {busy ? t("common.saving") : t("common.save")}
           </PrimaryButton>
         </div>
       </div>
@@ -226,6 +221,7 @@ function RuleDialog({
 
 export function RecurringSection({ ledger }: { ledger: Ledger }) {
   const { accounts, reload } = ledger;
+  const { t, dateLocale } = useLang();
   const [rules, setRules] = useState<Rule[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Rule | null>(null);
@@ -249,6 +245,20 @@ export function RecurringSection({ ledger }: { ledger: Ledger }) {
   }, [refresh]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  function nextLabel(day: number): string {
+    const p = previewRecurring(day, 1)[0];
+    if (!p) return "—";
+    const month = new Intl.DateTimeFormat(dateLocale, {
+      month: "long",
+    }).format(new Date(p.year, p.monthIdx, 1));
+    const wd = new Intl.DateTimeFormat(dateLocale, {
+      weekday: "short",
+    }).format(p.effective);
+    const base = `${wd}, ${p.effective.getDate()} ${month} ${p.year}`;
+    if (!p.shifted) return base;
+    return `${base} ${t("recur.movedUp", { day: p.scheduledDay })}`;
+  }
+
   async function toggleActive(rule: Rule) {
     await fetch(`/api/recurring/${rule.id}`, {
       method: "PATCH",
@@ -261,7 +271,10 @@ export function RecurringSection({ ledger }: { ledger: Ledger }) {
   async function removeRule(rule: Rule) {
     if (
       !window.confirm(
-        `Hapus jadwal "${rule.category}" tiap tgl ${rule.dayOfMonth}? Transaksi yang sudah tercatat tidak ikut terhapus.`,
+        t("recur.deleteConfirm", {
+          category: rule.category,
+          day: rule.dayOfMonth,
+        }),
       )
     )
       return;
@@ -279,14 +292,10 @@ export function RecurringSection({ ledger }: { ledger: Ledger }) {
       if (!r.ok) throw new Error();
       const j = (await r.json()) as { created?: number };
       const n = j.created ?? 0;
-      setRunMsg(
-        n > 0
-          ? `✅ ${n} transaksi jatuh tempo tercatat.`
-          : "Tidak ada yang jatuh tempo. Semua sudah tercatat. 👍",
-      );
+      setRunMsg(n > 0 ? t("recur.ranSome", { n }) : t("recur.ranNone"));
       if (n > 0) await reload();
     } catch {
-      setRunMsg("Gagal memproses. Coba lagi.");
+      setRunMsg(t("recur.runFail"));
     } finally {
       setRunBusy(false);
     }
@@ -295,20 +304,20 @@ export function RecurringSection({ ledger }: { ledger: Ledger }) {
   return (
     <section>
       <div className="mb-3 flex items-center">
-        <h2 className="text-base font-semibold">Gaji & Rutin</h2>
+        <h2 className="text-base font-semibold">{t("recur.title")}</h2>
         <span className="ms-auto flex gap-2">
           <button
             onClick={() => void runNow()}
             disabled={runBusy}
             className="rounded-full border border-outline-variant bg-surface px-3.5 py-1.5 text-sm font-semibold text-primary hover:bg-surface-container-low disabled:opacity-50"
           >
-            {runBusy ? "Memproses…" : "↻ Proses sekarang"}
+            {runBusy ? t("recur.processing") : t("recur.runNow")}
           </button>
           <button
             onClick={() => setShowAdd(true)}
             className="rounded-full border border-outline-variant bg-surface px-3.5 py-1.5 text-sm font-semibold text-primary hover:bg-surface-container-low"
           >
-            ＋ Tambah
+            {t("recur.add")}
           </button>
         </span>
       </div>
@@ -319,8 +328,7 @@ export function RecurringSection({ ledger }: { ledger: Ledger }) {
       ) : null}
       {rules.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-outline-variant bg-surface p-6 text-center text-sm text-on-surface-variant">
-          Belum ada jadwal otomatis. Tambahkan gaji bulananmu agar tercatat
-          sendiri tiap bulan.
+          {t("recur.empty")}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -340,32 +348,32 @@ export function RecurringSection({ ledger }: { ledger: Ledger }) {
                     {r.category} • {r.accountName}
                   </p>
                   <p className="text-xs text-on-surface-variant">
-                    {formatNative(r.amount, r.accountType)} • tiap tgl{" "}
-                    {r.dayOfMonth}
+                    {formatNative(r.amount, r.accountType)} •{" "}
+                    {t("recur.everyDate")} {r.dayOfMonth}
                   </p>
                 </div>
               </div>
               <p className="mt-2 text-xs text-on-surface-variant">
-                Berikutnya: <b>{nextLabel(r.dayOfMonth)}</b>
+                {t("recur.next")} <b>{nextLabel(r.dayOfMonth)}</b>
               </p>
               <div className="mt-2 flex gap-1">
                 <button
                   onClick={() => void toggleActive(r)}
                   className="rounded-full px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary-container"
                 >
-                  {r.active ? "⏸ Nonaktifkan" : "▶ Aktifkan"}
+                  {r.active ? t("recur.pause") : t("recur.resume")}
                 </button>
                 <button
                   onClick={() => setEditing(r)}
                   className="rounded-full px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary-container"
                 >
-                  Ubah
+                  {t("common.edit")}
                 </button>
                 <button
                   onClick={() => void removeRule(r)}
                   className="rounded-full px-2.5 py-1 text-xs font-semibold text-error hover:bg-error-container"
                 >
-                  Hapus
+                  {t("common.delete")}
                 </button>
               </div>
             </div>
