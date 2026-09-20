@@ -50,15 +50,7 @@ function shortIdr(v: number): string {
   return String(Math.round(v));
 }
 
-export function StatsSection({
-  ledger,
-  search = "",
-  kindFilter = "all",
-}: {
-  ledger: Ledger;
-  search?: string;
-  kindFilter?: "all" | "income" | "expense";
-}) {
+export function StatsSection({ ledger }: { ledger: Ledger }) {
   const { txs, accounts, rates, today, deleteTransaction } = ledger;
   const { iconOf, colorOf } = useCategories();
   const { t, dateLocale } = useLang();
@@ -68,19 +60,8 @@ export function StatsSection({
   const seriesIn = t("tx.kindIncome");
   const seriesOut = t("tx.kindExpense");
   const summary = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const filteredTxs =
-      kindFilter === "all" && q === ""
-        ? txs
-        : txs.filter(
-            (tx) =>
-              (kindFilter === "all" || tx.kind === kindFilter) &&
-              (q === "" ||
-                (tx.note ?? "").toLowerCase().includes(q) ||
-                tx.category.toLowerCase().includes(q)),
-          );
     const s = summarize(
-      filteredTxs,
+      txs,
       accounts,
       rates,
       period,
@@ -97,7 +78,7 @@ export function StatsSection({
         color: colorOf(c.name),
       })),
     };
-  }, [txs, accounts, rates, period, anchor, dateLocale, iconOf, colorOf, t, search, kindFilter]);
+  }, [txs, accounts, rates, period, anchor, dateLocale, iconOf, colorOf, t]);
   const accType = useMemo(
     () => new Map(accounts.map((a) => [a.id, a])),
     [accounts],
