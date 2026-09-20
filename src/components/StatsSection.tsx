@@ -201,7 +201,7 @@ export function StatsSection({ ledger }: { ledger: Ledger }) {
                   />
                   <Bar
                     dataKey={seriesOut}
-                    fill="#1976d2"
+                    fill="#ba1a1a"
                     radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
