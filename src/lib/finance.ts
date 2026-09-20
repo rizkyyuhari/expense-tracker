@@ -99,11 +99,18 @@ export function formatIDR(n: number): string {
   return "Rp" + Math.round(n).toLocaleString("id-ID");
 }
 
-export function formatNative(n: number, type: AccountType): string {  if (type === "IDR" || type === "CASH")
+export function formatNative(n: number, type: AccountType): string {
+  if (type === "IDR" || type === "CASH")
     return "Rp" + Math.round(n).toLocaleString("id-ID");
   if (type === "USDT")
     return `${n.toLocaleString("en-US", { maximumFractionDigits: 4 })} USDT`;
   return `${n.toLocaleString("en-US", { maximumFractionDigits: 4 })} gram`;
+}
+
+/** Jumlah digit desimal dari string step (cth "0.001" → 3). */
+export function decimalsFromStep(step: string): number {
+  const i = step.indexOf(".");
+  return i < 0 ? 0 : Math.max(0, step.length - i - 1);
 }
 
 /** Bulatkan nominal ke presisi wajar per tipe aset. */

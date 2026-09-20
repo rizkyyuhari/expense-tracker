@@ -10,6 +10,7 @@ import {
 import type { Ledger } from "@/lib/useLedger";
 import { useCategories } from "@/lib/useCategories";
 import { useLang } from "@/i18n/lang";
+import { NumericInput } from "./NumericInput";
 import { Modal, PrimaryButton, TextButton, fieldCls, labelCls } from "./ui";
 
 interface Rule {
@@ -137,13 +138,11 @@ function RuleDialog({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>{t("recur.amountMonth")}</label>
-            <input
+            <NumericInput
               className={fieldCls}
-              type="number"
-              min="0"
-              step="1000"
+              decimals={0}
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
               placeholder="8500000"
             />
           </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ACCOUNT_META,
   TxKind,
+  decimalsFromStep,
   formatNative,
   roundNative,
   toKey,
@@ -11,6 +12,7 @@ import {
 import type { Ledger } from "@/lib/useLedger";
 import { useCategories } from "@/lib/useCategories";
 import { useLang } from "@/i18n/lang";
+import { NumericInput } from "./NumericInput";
 import { Modal, PrimaryButton, TextButton, fieldCls, labelCls } from "./ui";
 
 const ICON_PRESETS = [
@@ -172,13 +174,15 @@ export function TransactionDialog({
                 ? t("tx.amount", { unit: account ? ACCOUNT_META[account.type].unit : "" })
                 : t("tx.actualBalance", { unit: account ? ACCOUNT_META[account.type].unit : "" })}
             </label>
-            <input
+            <NumericInput
               className={fieldCls}
-              type="number"
-              min="0"
-              step={account ? ACCOUNT_META[account.type].step : "any"}
+              decimals={
+                account
+                  ? decimalsFromStep(ACCOUNT_META[account.type].step)
+                  : 0
+              }
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
               placeholder="0"
               autoFocus
             />

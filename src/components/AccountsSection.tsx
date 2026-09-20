@@ -5,12 +5,14 @@ import {
   ACCOUNT_META,
   Account,
   AccountType,
+  decimalsFromStep,
   formatIDR,
   formatNative,
   toIdr,
 } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
 import { useLang } from "@/i18n/lang";
+import { NumericInput } from "./NumericInput";
 import { Modal, PrimaryButton, TextButton, fieldCls, labelCls } from "./ui";
 
 function AccountDialog({
@@ -73,13 +75,11 @@ function AccountDialog({
           <label className={labelCls}>
             {t("accounts.balance", { unit: ACCOUNT_META[type].unit })}
           </label>
-          <input
+          <NumericInput
             className={fieldCls}
-            type="number"
-            min="0"
-            step={ACCOUNT_META[type].step}
+            decimals={decimalsFromStep(ACCOUNT_META[type].step)}
             value={balance}
-            onChange={(e) => setBalance(e.target.value)}
+            onChange={setBalance}
             placeholder="0"
           />
           {initial ? (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatIDR } from "@/lib/finance";
 import type { Ledger } from "@/lib/useLedger";
 import { useLang } from "@/i18n/lang";
+import { NumericInput } from "./NumericInput";
 
 export function RatesBar({ ledger }: { ledger: Ledger }) {
   const { t, dateLocale } = useLang();
@@ -72,11 +73,11 @@ export function RatesBar({ ledger }: { ledger: Ledger }) {
             setEditing(false);
           }}
         >
-          <input
-            inputMode="numeric"
+          <NumericInput
             placeholder={t("rates.antamPh")}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={setDraft}
+            decimals={0}
             className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <button
