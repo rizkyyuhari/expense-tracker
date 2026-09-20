@@ -1,28 +1,30 @@
 @import "tailwindcss";
 
-/* Material 3 (M3) light scheme — putih + biru muda.
-   Pakai color roles M3 sebagai token Tailwind:
+/* Tema DompetKu — adaptasi desain Figma (fintech navy + putih).
+   Token semantik M3 dipertahankan namanya agar komponen lama ikut re-skin:
    bg-primary, text-on-primary, bg-primary-container, dsb. */
 @theme {
-  --color-primary: #1976d2;
+  --color-primary: #1b1bb3;
   --color-on-primary: #ffffff;
-  --color-primary-container: #d6e9ff;
-  --color-on-primary-container: #0b2f5c;
-  --color-secondary-container: #e3f0ff;
-  --color-on-secondary-container: #1a3a5c;
+  --color-primary-container: #e3e3fb;
+  --color-on-primary-container: #12126e;
+  --color-secondary-container: #e9e9fd;
+  --color-on-secondary-container: #1c1c78;
   --color-surface: #ffffff;
-  --color-surface-container-low: #f4f8ff;
-  --color-surface-container: #e9f1fc;
-  --color-surface-container-high: #e0ebfa;
-  --color-on-surface: #191c20;
-  --color-on-surface-variant: #44484f;
-  --color-outline: #8b9099;
-  --color-outline-variant: #d3e2f3;
-  --color-error: #ba1a1a;
+  --color-surface-container-low: #f3f4fa;
+  --color-surface-container: #eceef7;
+  --color-surface-container-high: #e2e4f0;
+  --color-on-surface: #14142b;
+  --color-on-surface-variant: #7a7a96;
+  --color-outline: #8b8ba3;
+  --color-outline-variant: #e3e4ef;
+  --color-error: #e5484d;
   --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-success: #1b7a3d;
-  --color-success-container: #d3f2dd;
+  --color-error-container: #ffe1e2;
+  --color-success: #22a06b;
+  --color-on-success: #ffffff;
+  --color-success-container: #d6f5e3;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
 
 html {
@@ -43,4 +45,13 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Scrollbar horizontal disembunyikan untuk deretan kartu/chip */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

@@ -24,14 +24,16 @@ const ICON_PRESETS = [
 export function TransactionDialog({
   ledger,
   onClose,
+  initialKind,
 }: {
   ledger: Ledger;
   onClose: () => void;
+  initialKind?: TxKind;
 }) {
   const { accounts, addTransaction } = ledger;
   const { list: categories, addCategory } = useCategories();
   const { t } = useLang();
-  const [kind, setKind] = useState<TxKind>("expense");
+  const [kind, setKind] = useState<TxKind>(initialKind ?? "expense");
   const [mode, setMode] = useState<"amount" | "balance">("amount");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [amount, setAmount] = useState("");
